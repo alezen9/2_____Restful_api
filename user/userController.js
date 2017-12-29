@@ -3,6 +3,8 @@ var router = express.Router();
 var bodyParser = require('body-parser');
 router.use(bodyParser.urlencoded({extended: true}));
 var fs = require('fs');
+var cors = require('cors');
+router.use(cors());
 
 module.exports = router;
 
