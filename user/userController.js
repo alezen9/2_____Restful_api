@@ -16,7 +16,7 @@ if (exists) {
   file_a = JSON.parse(txt);
 } else {
   // Otherwise start with blank list
-  console.log('empty databased');
+  console.log('empty database');
   file_a = {
 			"users": [],
 			  "id": 0
