@@ -1,13 +1,3 @@
-/*
-initially json file should be like this
-
-{
-	"users": [],
-	"id": 0
-}
-
-*/
-
 var express = require('express');
 var router = express.Router();
 var bodyParser = require('body-parser');
@@ -16,60 +6,158 @@ var fs = require('fs');
 
 module.exports = router;
 
+var file_a;
+var exists = fs.existsSync('data.json');
+if (exists) {
+  // Read the file
+  console.log('loading database');
+  var txt = fs.readFileSync('data.json', 'utf8');
+  // Parse it  back to object
+  file_a = JSON.parse(txt);
+} else {
+  // Otherwise start with blank list
+  console.log('empty databased');
+  file_a = {
+			"users": [],
+			  "id": 0
+			};
+}
+
+//returns all users in database
+router.get('/all',function(req,res){
+	var reply = file_a.users;
+	console.log(JSON.stringify(reply, null, 2));
+	res.send(reply);
+});
 
 //create new user (funzionante)
+
 router.post('/',function(req,res){
-	var utente = [];
-	utente.name = req.body.name;
-	utente.email = req.body.email;
-	utente.password = req.body.password;
-		fs.readFile('./data.json', 'utf-8', function(err, data) {
-			if (err) throw err;
-			var arrayOfObjects = JSON.parse(data);
-			arrayOfObjects.id = arrayOfObjects.id +1;
-			arrayOfObjects.users.push({
-				name: utente.name,
-				email: utente.email,
-				password: utente.password,
-				id: arrayOfObjects.id
-			})		
-			fs.writeFile('./data.json', JSON.stringify(arrayOfObjects, null, 2), 'utf-8', function(err) {
-			if (err) throw err;
-			console.log('Succesfully added user ' + utente.name);
-			})
-		})
-		res.status(200).send('Succesfully added user ' + utente.name);
-	});
-/*
-//returns all users in database
-router.get('/',function(req,res){
-	User.find({},function(err,users){
-		if(err) return res.status(500).send("There was a problem finding the user.");
-		res.status(200).send(users);
-	});
+	var utente_name = req.body.name;
+	var utente_email = req.body.email;
+	var utente_password = req.body.password;
+	file_a.id = file_a.id +1;
+	file_a.users.push({
+		name: utente_name,
+		email: utente_email,
+		password: utente_password,
+		id: file_a.id
+	})
+	// update json
+	fs.writeFile('./data.json', JSON.stringify(file_a, null, 2), 'utf-8', function(err) {
+		if (err) throw err;
+		console.log('Succesfully added user ' + utente_name);
+	})
+
+	var reply = {
+		status: 'successfully added',
+		name: utente_name,
+		email: utente_email,
+		password: utente_password,
+		id: file_a.id
+	  }
+	res.status(200).send(reply);
 });
+
 
 //gets single user from database
 router.get('/:id',function(req,res){
-	User.findById(req.params.id,function(err,user){
-		if(err) return res.status(500).send("There was a problem finding the user.");
-		res.status(200).send(user);
+	var reply;
+	var id = Number(req.params.id);
+	var index = file_a.users.findIndex(function(item, i){
+	  return item.id=== id;
 	});
+	if(index<0){
+		reply = 'user not found';
+		console.log(reply);
+	}
+	else{
+		reply = file_a.users[index];
+		console.log(JSON.stringify(reply, null, 2));
+	}
+	res.send(reply);
 });
 
 //delete user from database
 router.delete('/:id',function(req,res){
-	User.findByIdAndRemove(req.params.id,function(err,user){
-		if(err) return res.status(500).send("There was a problem deleting the user.");
-		res.status(200).send("User "+user.name+" was deleted.");
+	var reply;
+	var id = Number(req.params.id);
+	var index = file_a.users.findIndex(function(item, i){
+	  return item.id=== id;
 	});
+	if(index<0){
+		reply = 'user not found';
+		console.log(reply);
+	}
+	else{
+		reply = {
+			status: 'successfully deleted',
+			name: file_a.users[index].name,
+			email: file_a.users[index].email,
+			password: file_a.users[index].password,
+			id: file_a.users[index].id
+		  }
+		  var utente_nome = file_a.users[index].name;
+		file_a.users.splice(index,1);
+		fs.writeFile('./data.json', JSON.stringify(file_a, null, 2), 'utf-8', function(err) {
+			if (err) throw err;
+			console.log('Succesfully deleted user ' + utente_nome);
+		})
+		console.log(JSON.stringify(reply, null, 2));
+	}
+	res.send(reply);
 });
+
 
 //update single user in database
 router.put('/:id',function(req,res){
-	User.findByIdAndUpdate(req.params.id,req.body,{new: true},function(err,user){ //new: true because i want to be returned the updated value of user and not the old one
-		if(err) return res.status(500).send("There was a problem updating the user.");
-		res.status(200).send(user);
+	var reply;
+	var id = Number(req.params.id);
+	var utente_name;
+	var utente_email;
+	var utente_password;
+	var index = file_a.users.findIndex(function(item, i){
+		return item.id=== id;
 	});
+	if(index<0){
+		 reply = 'user not found';
+		console.log(reply);
+	}
+	else{
+		if(!req.body.name){
+			utente_name = file_a.users[index].name;
+		}
+		else{
+			utente_name = req.body.name;
+		}
+		if(!req.body.password){
+			utente_password = file_a.users[index].password;
+		}
+		else{
+			utente_password = req.body.password;
+		}
+		if(!req.body.email){
+			utente_email = file_a.users[index].email;
+		}
+		else{
+			utente_email = req.body.email;
+		}
+		file_a.users[index].name = utente_name;
+		file_a.users[index].password = utente_password;
+		file_a.users[index].email = utente_email;
+		reply = {
+			status: 'successfully updated',
+			name: utente_name,
+			email: utente_email,
+			password: utente_password,
+			id: file_a.users[index].id
+		}
+		// update json
+		fs.writeFile('./data.json', JSON.stringify(file_a, null, 2), 'utf-8', function(err) {
+			if (err) throw err;
+			console.log('Succesfully updated user ' + utente_name);
+		})
+	}
+	console.log(JSON.stringify(reply, null, 2));
+	res.send(reply);
 });
-*/
